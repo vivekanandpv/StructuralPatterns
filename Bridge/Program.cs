@@ -3,6 +3,8 @@
 namespace Bridge {
     class Program {
         static void Main(string[] args) {
+            //  Section 4
+            //  Client decides to provide the runtime algorithm
             IServer awsServer = new AwsEc2();
             VirtualInfrastructureBase infrastructure = new CloudVirtualInfrastructure(awsServer);
 
@@ -10,12 +12,18 @@ namespace Bridge {
             infrastructure.Stop();
 
             IServer azureServer = new AzureVm();
+            //  Changing the algorithm delegate at runtime
             infrastructure.SetServer(azureServer);
 
+            //  Demonstrating the effect that the core and low-level interfaces
+            //  traverse independently
             infrastructure.Instantiate();
             infrastructure.Stop();
         }
     }
+
+    //  Section 3
+    //  Low-level interface
 
     interface IServer {
         public bool HasStarted { get; set; }
@@ -94,9 +102,19 @@ namespace Bridge {
         }
     }
 
+    //  Section 1
+    //  Abstraction of the core functionality (client uses)
     abstract class VirtualInfrastructureBase {
+        //  Abstraction of the low-level functionality
+        //  This is extracted for cleaner and flexible design
+        //  Setter is provided so that the low-level functionality can be
+        //  dynamically set
+        //  The crux here is that the both the abstractions can change independently
+        //  When we add another method to this abstraction for example,
+        //  it doesn't cause any impact on IServer
         protected IServer Server { get; set; }
 
+        //
         protected VirtualInfrastructureBase(IServer server) {
             this.Server = server;
         }
@@ -108,14 +126,19 @@ namespace Bridge {
         public abstract void SetServer(IServer server);
     }
 
+    //  Section 2
+    //  Concrete implementation of the core interface
     class CloudVirtualInfrastructure : VirtualInfrastructureBase {
         public CloudVirtualInfrastructure(IServer server) : base(server) {
         }
 
+        //  For plugging the low-level interface at runtime
         public override void SetServer(IServer server) {
             Server = server;
         }
 
+        //  Implementer is free to utilize the low-level interface
+        //  Juxtapose with Template Method Pattern
         public override void Instantiate() {
             Server.PowerOn();
             Server.InstallMachineImage();
